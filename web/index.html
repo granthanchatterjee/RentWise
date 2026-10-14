@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RentWise: flats directly from owners</title>
+<style>
+:root{--paper:#f4f6f3;--ink:#1c2b30;--mute:#5d6e72;--teal:#0e6a6a;--brass:#a87a1f;--rule:#d3dad5;--err:#a3321f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,sans-serif}
+h1,h2,h3,.door{font-family:Georgia,"Times New Roman",serif}
+:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+header{background:var(--ink);color:#fff;padding:18px 24px;display:flex;flex-wrap:wrap;gap:8px 28px;align-items:center}
+header h1{margin:0;font-size:26px}
+header p{margin:0;color:#b9c8c8}
+nav{margin-left:auto;display:flex;gap:6px}
+nav button{background:none;border:1px solid #4a6368;color:#fff;padding:8px 16px;border-radius:3px;cursor:pointer;font:inherit}
+nav button[aria-pressed=true]{background:#fff;color:var(--ink);border-color:#fff}
+main{max-width:1100px;margin:0 auto;padding:24px}
+.layout{display:grid;grid-template-columns:260px 1fr;gap:28px;align-items:start}
+@media(max-width:800px){.layout{grid-template-columns:1fr}}
+form.filters,form.add{background:#fff;border:1px solid var(--rule);padding:18px;border-radius:4px}
+label{display:block;font-weight:600;margin:12px 0 4px}
+label:first-child{margin-top:0}
+input,select,textarea{width:100%;padding:8px;border:1px solid #b9c4bf;border-radius:3px;font:inherit;background:#fff;color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+fieldset{border:0;padding:0;margin:12px 0 0}
+legend{font-weight:600;padding:0;margin-bottom:4px}
+.checks{display:flex;flex-wrap:wrap;gap:4px 14px}
+.checks label{font-weight:400;margin:0;display:flex;gap:6px;align-items:center}
+.checks input{width:auto}
+button.primary{margin-top:16px;width:100%;background:var(--teal);color:#fff;border:0;padding:10px;border-radius:3px;font:inherit;font-weight:600;cursor:pointer}
+button.link{background:none;border:0;color:var(--teal);cursor:pointer;font:inherit;padding:0;text-decoration:underline}
+.count{margin:0 0 12px;color:var(--mute)}
+.row{display:grid;grid-template-columns:96px 1fr auto;gap:18px;background:#fff;border:1px solid var(--rule);margin-bottom:12px;cursor:pointer;width:100%;text-align:left;font:inherit;color:inherit;padding:0}
+.row:hover{border-color:var(--teal)}
+.plate{background:var(--teal);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 0}
+.door{font-size:44px;line-height:1}
+.plate span{font-size:13px;margin-top:4px}
+.info{padding:14px 0}
+.info h3{margin:0 0 2px;font-size:19px}
+.meta{color:var(--mute);margin:0 0 8px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tags span{border:1px solid var(--rule);padding:1px 8px;border-radius:2px;font-size:13px}
+.price{padding:14px 18px;text-align:right;align-self:center}
+.price b{display:block;font:700 24px Georgia,serif;color:var(--brass)}
+.price small{color:var(--mute)}
+@media(max-width:560px){.row{grid-template-columns:72px 1fr}.price{grid-column:1/-1;text-align:left;padding-top:0}}
+.pager{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:16px}
+.pager button{padding:6px 14px;border:1px solid var(--ink);background:#fff;border-radius:3px;cursor:pointer;font:inherit}
+.pager button:disabled{opacity:.4;cursor:default}
+.empty{padding:28px;background:#fff;border:1px dashed #b9c4bf;text-align:center}
+.msg{padding:10px 14px;margin-bottom:14px;border-radius:3px}
+.msg.ok{background:#e1f0ea;border:1px solid #9cc7b6}
+.msg.bad{background:#f8e5e0;border:1px solid #dba99d;color:var(--err)}
+.msg ul{margin:4px 0 0;padding-left:20px}
+dialog{border:0;border-radius:4px;max-width:560px;width:calc(100% - 32px);padding:0}
+dialog::backdrop{background:rgba(28,43,48,.55)}
+.dlg{padding:22px}
+.dlg h2{margin:0 0 4px}
+.dlg dl{display:grid;grid-template-columns:130px 1fr;gap:6px 12px;margin:14px 0}
+.dlg dt{color:var(--mute)}
+.dlg dd{margin:0}
+.bigrent{font:700 28px Georgia,serif;color:var(--brass)}
+.contact{border-top:1px solid var(--rule);padding-top:12px;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>RentWise</h1>
+  <p>Flats directly from owners. No broker fee.</p>
+  <nav>
+    <button id="tab-find" aria-pressed="true">Find a flat</button>
+    <button id="tab-list" aria-pressed="false">List your flat</button>
+  </nav>
+</header>
+<main>
+  <div id="banner"></div>
+
+  <section id="find" class="layout">
+    <form class="filters" id="filters" aria-label="Filter flats">
+      <label for="f-q">Search</label><input id="f-q" name="q" placeholder="Title, area or keyword">
+      <label for="f-city">City</label><select id="f-city" name="city"></select>
+      <label for="f-loc">Locality</label><input id="f-loc" name="locality" placeholder="e.g. Baner">
+      <div class="two">
+        <div><label for="f-min">Min rent</label><input id="f-min" name="min_rent" type="number" min="0" step="500"></div>
+        <div><label for="f-max">Max rent</label><input id="f-max" name="max_rent" type="number" min="0" step="500"></div>
+      </div>
+      <label for="f-beds">Bedrooms</label>
+      <select id="f-beds" name="bedrooms"><option value="">Any</option><option value="0">Studio</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4 or more</option></select>
+      <label for="f-type">Property type</label><select id="f-type" name="property_type"></select>
+      <label for="f-furn">Furnishing</label><select id="f-furn" name="furnishing"></select>
+      <fieldset><legend>Must have</legend><div class="checks" id="f-am"></div></fieldset>
+      <label for="f-sort">Sort by</label>
+      <select id="f-sort" name="sort"><option value="newest">Newest first</option><option value="rent_asc">Rent: low to high</option><option value="rent_desc">Rent: high to low</option></select>
+      <button class="primary" type="submit">Show flats</button>
+      <p style="margin:10px 0 0"><button class="link" type="button" id="reset">Clear filters</button></p>
+    </form>
+    <div>
+      <p class="count" id="count" aria-live="polite"></p>
+      <div id="results"></div>
+      <div class="pager" id="pager"></div>
+    </div>
+  </section>
+
+  <section id="list" hidden>
+    <form class="add" id="add" style="max-width:640px">
+      <h2 style="margin-top:0">List your flat</h2>
+      <div id="add-errors"></div>
+      <label for="a-title">Listing title</label><input id="a-title" name="title" required minlength="5" placeholder="e.g. Bright 2 BHK near the river">
+      <div class="two">
+        <div><label for="a-city">City</label><input id="a-city" name="city" required></div>
+        <div><label for="a-loc">Locality</label><input id="a-loc" name="locality" required></div>
+      </div>
+      <div class="two">
+        <div><label for="a-rent">Monthly rent (₹)</label><input id="a-rent" name="rent" type="number" min="500" required></div>
+        <div><label for="a-dep">Deposit (₹)</label><input id="a-dep" name="deposit" type="number" min="0"></div>
+      </div>
+      <div class="two">
+        <div><label for="a-beds">Bedrooms (0 for studio)</label><input id="a-beds" name="bedrooms" type="number" min="0" max="10" required></div>
+        <div><label for="a-bath">Bathrooms</label><input id="a-bath" name="bathrooms" type="number" min="1" max="10" value="1"></div>
+      </div>
+      <div class="two">
+        <div><label for="a-area">Area (sq ft)</label><input id="a-area" name="area_sqft" type="number" min="50"></div>
+        <div><label for="a-date">Available from</label><input id="a-date" name="available_from" type="date"></div>
+      </div>
+      <div class="two">
+        <div><label for="a-type">Property type</label><select id="a-type" name="property_type" required></select></div>
+        <div><label for="a-furn">Furnishing</label><select id="a-furn" name="furnishing" required></select></div>
+      </div>
+      <fieldset><legend>Amenities</legend><div class="checks" id="a-am"></div></fieldset>
+      <label for="a-desc">Description</label><textarea id="a-desc" name="description" rows="3" maxlength="1000"></textarea>
+      <div class="two">
+        <div><label for="a-owner">Your name</label><input id="a-owner" name="owner_name" required></div>
+        <div><label for="a-phone">Mobile number</label><input id="a-phone" name="owner_phone" required placeholder="10 digits"></div>
+      </div>
+      <button class="primary" type="submit">Publish listing</button>
+    </form>
+  </section>
+</main>
+<dialog id="detail"><div class="dlg" id="detail-body"></div></dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = async (path, opts) => { const r = await fetch(path, opts); const j = await r.json(); if (!r.ok) throw j; return j; };
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const inr = n => "₹" + Number(n).toLocaleString("en-IN");
+const nice = s => s.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
+const PAGE_SIZE = 6;
+let page = 1;
+
+function options(sel, values, anyLabel) {
+  sel.innerHTML = (anyLabel ? `<option value="">${anyLabel}</option>` : "") +
+    values.map(v => `<option value="${esc(v)}">${esc(nice(v))}</option>`).join("");
+}
+function checks(box, name, values) {
+  box.innerHTML = values.map(v => `<label><input type="checkbox" name="${name}" value="${v}"> ${nice(v)}</label>`).join("");
+}
+function banner(kind, html) { $("#banner").innerHTML = html ? `<div class="msg ${kind}" role="status">${html}</div>` : ""; }
+
+async function init() {
+  const meta = await api("/api/meta");
+  options($("#f-city"), meta.cities, "All cities");
+  options($("#f-type"), meta.property_types, "Any type");
+  options($("#f-furn"), meta.furnishing, "Any");
+  options($("#a-type"), meta.property_types);
+  options($("#a-furn"), meta.furnishing);
+  checks($("#f-am"), "amenities", meta.amenities);
+  checks($("#a-am"), "amenities", meta.amenities);
+  await search();
+}
+
+async function search() {
+  const fd = new FormData($("#filters"));
+  const p = new URLSearchParams();
+  for (const [k, v] of fd) if (v !== "" && k !== "amenities") p.set(k, v);
+  const am = fd.getAll("amenities");
+  if (am.length) p.set("amenities", am.join(","));
+  p.set("page", page); p.set("limit", PAGE_SIZE);
+  try {
+    const r = await api("/api/listings?" + p);
+    render(r);
+  } catch (e) { banner("bad", (e.errors || ["Could not load flats"]).map(esc).join("<br>")); }
+}
+
+function render(r) {
+  banner("", "");
+  $("#count").textContent = r.total === 1 ? "1 flat found" : `${r.total} flats found`;
+  $("#results").innerHTML = r.items.length ? r.items.map(row).join("") :
+    `<div class="empty"><b>No flats match these filters.</b><br>Try a wider rent range or clear a filter.</div>`;
+  const pages = Math.max(1, Math.ceil(r.total / r.limit));
+  $("#pager").innerHTML = pages > 1 ? `<button id="prev" ${r.page <= 1 ? "disabled" : ""}>Previous</button>
+    <span>Page ${r.page} of ${pages}</span><button id="next" ${r.page >= pages ? "disabled" : ""}>Next</button>` : "";
+  if ($("#prev")) $("#prev").onclick = () => { page--; search(); };
+  if ($("#next")) $("#next").onclick = () => { page++; search(); };
+}
+
+function row(l) {
+  const bhk = l.bedrooms === 0 ? ["S", "Studio"] : [l.bedrooms, "BHK"];
+  const tags = [nice(l.furnishing), nice(l.property_type), l.area_sqft ? l.area_sqft + " sq ft" : null, ...l.amenities.slice(0, 3).map(nice)].filter(Boolean);
+  return `<button class="row" data-id="${l.id}">
+    <div class="plate"><div class="door">${bhk[0]}</div><span>${bhk[1]}</span></div>
+    <div class="info"><h3>${esc(l.title)}</h3><p class="meta">${esc(l.locality)}, ${esc(l.city)}</p>
+      <div class="tags">${tags.map(t => `<span>${esc(t)}</span>`).join("")}</div></div>
+    <div class="price"><b>${inr(l.rent)}</b><small>per month<br>Deposit ${inr(l.deposit)}</small></div></button>`;
+}
+
+async function showDetail(id) {
+  const l = await api("/api/listings/" + id);
+  const rows = [["Type", nice(l.property_type)], ["Furnishing", nice(l.furnishing)], ["Bedrooms", l.bedrooms === 0 ? "Studio" : l.bedrooms],
+    ["Bathrooms", l.bathrooms], ["Area", l.area_sqft ? l.area_sqft + " sq ft" : "Not given"], ["Deposit", inr(l.deposit)],
+    ["Available from", l.available_from || "Now"], ["Amenities", l.amenities.length ? l.amenities.map(nice).join(", ") : "None listed"]];
+  $("#detail-body").innerHTML = `<h2>${esc(l.title)}</h2><p class="meta">${esc(l.locality)}, ${esc(l.city)}</p>
+    <div class="bigrent">${inr(l.rent)} <small style="font:14px 'Segoe UI';color:var(--mute)">per month</small></div>
+    <p>${esc(l.description)}</p>
+    <dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+    <div class="contact"><b>${esc(l.owner_name)}</b>, owner<br>Call <a href="tel:${esc(l.owner_phone)}">${esc(l.owner_phone)}</a></div>
+    <p style="text-align:right;margin:14px 0 0"><button class="link" id="close">Close</button></p>`;
+  $("#close").onclick = () => $("#detail").close();
+  $("#detail").showModal();
+}
+
+function tab(which) {
+  $("#find").hidden = which !== "find"; $("#list").hidden = which !== "list";
+  $("#tab-find").setAttribute("aria-pressed", which === "find");
+  $("#tab-list").setAttribute("aria-pressed", which === "list");
+  banner("", "");
+}
+
+$("#tab-find").onclick = () => tab("find");
+$("#tab-list").onclick = () => tab("list");
+$("#filters").onsubmit = e => { e.preventDefault(); page = 1; search(); };
+$("#reset").onclick = () => { $("#filters").reset(); page = 1; search(); };
+$("#results").onclick = e => { const b = e.target.closest(".row"); if (b) showDetail(b.dataset.id); };
+
+$("#add").onsubmit = async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target), body = { amenities: fd.getAll("amenities") };
+  for (const [k, v] of fd) if (k !== "amenities" && v !== "") body[k] = v;
+  try {
+    const l = await api("/api/listings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    e.target.reset(); $("#add-errors").innerHTML = "";
+    const meta = await api("/api/meta"); options($("#f-city"), meta.cities, "All cities");
+    $("#filters").reset(); $("#f-city").value = l.city; page = 1;
+    tab("find"); await search(); banner("ok", `Listed: <b>${esc(l.title)}</b>. It now shows in search.`);
+  } catch (err) {
+    $("#add-errors").innerHTML = `<div class="msg bad" role="alert">Fix these and publish again:<ul>${(err.errors || ["Could not save the listing"]).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>`;
+    window.scrollTo(0, 0);
+  }
+};
+
+init();
+</script>
+</body>
+</html>
